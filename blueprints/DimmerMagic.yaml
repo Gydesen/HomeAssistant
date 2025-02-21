@@ -6,6 +6,9 @@ blueprint:
   domain: automation
   input:
     hue_dimmer:
+      name: Hue Dimmer
+      selector:
+        device:
     target_light:
 mode: restart
 triggers:
