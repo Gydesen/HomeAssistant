@@ -1,7 +1,7 @@
 blueprint:
   name: DimmerMagic
   description: Binding a Hue Dimmer to a Area
-  source_url: https://github.com/Gydesen/HomeAssistant/blueprints/DimmerMagic.yaml
+  source_url: https://raw.githubusercontent.com/Gydesen/HomeAssistant/refs/heads/main/blueprints/DimmerMagic.yaml?token=GHSAT0AAAAAAC6FF7MBZSXQO7LE4LUNOPHSZ5Y75MA
   author: Gydesen
   domain: automation
   input:
@@ -13,6 +13,14 @@ blueprint:
       name: Target light
       selector:
         device:
+    delay_ms:
+      name: Delay In milliseconds
+      default: 300
+      selector:
+        number:
+          min: 20
+          max: 999
+          unit_of_measurement: milliseconds
 mode: restart
 triggers:
   - domain: mqtt
@@ -122,7 +130,7 @@ actions:
                     hours: 0
                     minutes: 0
                     seconds: 0
-                    milliseconds: 300
+                    milliseconds: !input delay_ms
               while:
                 - condition: trigger
                   id:
@@ -145,7 +153,7 @@ actions:
                     hours: 0
                     minutes: 0
                     seconds: 0
-                    milliseconds: 300
+                    milliseconds: !input delay_ms
               while:
                 - condition: trigger
                   id:
