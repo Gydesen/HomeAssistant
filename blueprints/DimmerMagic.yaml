@@ -7,9 +7,7 @@ blueprint:
   input:
     hue_dimmer:
     target_light:
-
 mode: restart
-
 triggers:
   - domain: mqtt
     device_id: !input hue_dimmer
@@ -65,9 +63,7 @@ triggers:
     subtype: off_press_release
     trigger: device
     id: off_press_release
-
 conditions: []
-
 actions:
   - choose:
       - conditions:
@@ -148,5 +144,3 @@ actions:
                 - condition: trigger
                   id:
                     - down_hold
-
-  
