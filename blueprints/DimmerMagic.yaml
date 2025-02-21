@@ -12,7 +12,7 @@ blueprint:
     target_light:
       name: Target light
       selector:
-        area:
+        device:
 mode: restart
 triggers:
   - domain: mqtt
