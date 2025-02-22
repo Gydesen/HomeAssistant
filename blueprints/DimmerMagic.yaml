@@ -8,34 +8,61 @@ blueprint:
     hue_dimmer:
       name: Hue Dimmer
       selector:
-        device: {}
+        device:
+          multiple: false
     target_light:
       name: Target light
       selector:
-        device: {}
+        device:
+          multiple: false
     target_entity:
       name: Target entity
       selector:
-        entity: {}
-    delay_ms:
-      name: Delay In milliseconds
-      default: 300
-      selector:
-        number:
-          min: 20.0
-          max: 999.0
-          unit_of_measurement: milliseconds
-          step: 1.0
-          mode: slider
+        entity:
+          multiple: false
     on_light_level:
       name: On light level
       default: 80
       selector:
         number:
-          min: 10
-          max: 100
+          min: 10.0
+          max: 100.0
           unit_of_measurement: percent
+          step: 1.0
+          mode: slider
+    delay_ms:
+      name: Delay In milliseconds
+      default: 300
+      selector:
+        number:
+          min: 10.0
+          max: 1000.0
+          unit_of_measurement: milliseconds
+          step: 10.0
+          mode: slider
+    transition_time:
+      name: Light transition time in continuous loop
+      default: 0.3
+      selector:
+        number:
+          min: 0.01
+          max: 1.0
+          unit_of_measurement: seconds
+          step: 0.01
+          mode: slider
+    continuous_step:
+      name: Percentage step in continuous loop
+      default: 10
+      selector:
+        number:
+          min: 1
+          max: 100
+          unit_of_measurement: "%"
+          step: 1
+          mode: slider
 mode: restart
+variables:
+  var_continuous_step: !input continuous_step
 triggers:
   - domain: mqtt
     device_id: !input hue_dimmer
@@ -136,6 +163,7 @@ triggers:
 conditions: []
 actions:
   - choose:
+      # Toggle light on / off
       - conditions:
           - condition: trigger
             id:
@@ -167,6 +195,7 @@ actions:
                     data: {}
                     target:
                       device_id: !input target_light
+      # Dim up, one step
       - conditions:
           - condition: trigger
             id:
@@ -178,6 +207,7 @@ actions:
               brightness_step_pct: 3
             target:
               device_id: !input target_light
+      # Dim down, one step
       - conditions:
           - condition: trigger
             id:
@@ -189,6 +219,7 @@ actions:
               brightness_step_pct: -3
             target:
               device_id: !input target_light
+      # Dim up, continious
       - conditions:
           - condition: trigger
             id:
@@ -199,8 +230,8 @@ actions:
                 - action: light.turn_on
                   metadata: {}
                   data:
-                    brightness_step_pct: 10
-                    transition: 0.3
+                    brightness_step_pct: !input continuous_step
+                    transition: !input transition_time
                   target:
                     device_id: !input target_light
                 - delay:
@@ -212,6 +243,7 @@ actions:
                 - condition: trigger
                   id:
                     - up_hold
+      # Dim down, continious
       - conditions:
           - condition: trigger
             id:
@@ -222,8 +254,8 @@ actions:
                 - action: light.turn_on
                   metadata: {}
                   data:
-                    brightness_step_pct: -10
-                    transition: 0.3
+                    brightness_step_pct: "{{ var_continuous_step * -1 }}"
+                    transition: !input transition_time
                   target:
                     device_id: !input target_light
                 - delay:
