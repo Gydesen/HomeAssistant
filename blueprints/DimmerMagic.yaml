@@ -60,9 +60,20 @@ blueprint:
           unit_of_measurement: "%"
           step: 1
           mode: slider
+    step_step:
+      name: Percentage step in single clicks
+      default: 5
+      selector:
+        number:
+          min: 1
+          max: 100
+          unit_of_measurement: "%"
+          step: 1
+          mode: slider
 mode: restart
 variables:
   var_continuous_step: !input continuous_step
+  var_step_step: !input step_step
 triggers:
   - domain: mqtt
     device_id: !input hue_dimmer
@@ -204,7 +215,7 @@ actions:
           - action: light.turn_on
             metadata: {}
             data:
-              brightness_step_pct: 3
+              brightness_step_pct: !input step_step
             target:
               device_id: !input target_light
       # Dim down, one step
@@ -216,7 +227,7 @@ actions:
           - action: light.turn_on
             metadata: {}
             data:
-              brightness_step_pct: -3
+              brightness_step_pct: "{{ var_step_step * -1}}"
             target:
               device_id: !input target_light
       # Dim up, continious
