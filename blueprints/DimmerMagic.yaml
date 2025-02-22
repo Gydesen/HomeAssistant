@@ -8,25 +8,41 @@ blueprint:
     hue_dimmer:
       name: Hue Dimmer
       selector:
-        device:
+        device: {}
     target_light:
       name: Target light
       selector:
-        device:
+        device: {}
     target_entity:
       name: Target entity
       selector:
-        entity:
+        entity: {}
     delay_ms:
       name: Delay In milliseconds
       default: 300
       selector:
         number:
-          min: 20
-          max: 999
+          min: 20.0
+          max: 999.0
           unit_of_measurement: milliseconds
+          step: 1.0
+          mode: slider
+    on_light_level:
+      name: On light level
+      default: 80
+      selector:
+        number:
+          min: 10
+          max: 100
+          unit_of_measurement: percent
 mode: restart
 triggers:
+  - domain: mqtt
+    device_id: !input hue_dimmer
+    type: action
+    subtype: up_press
+    trigger: device
+    id: up_press
   - domain: mqtt
     device_id: !input hue_dimmer
     type: action
@@ -45,6 +61,12 @@ triggers:
     subtype: up_hold_release
     trigger: device
     id: up_hold_release
+  - domain: mqtt
+    device_id: !input hue_dimmer
+    type: action
+    subtype: down_press
+    trigger: device
+    id: down_press
   - domain: mqtt
     device_id: !input hue_dimmer
     type: action
@@ -78,16 +100,46 @@ triggers:
   - domain: mqtt
     device_id: !input hue_dimmer
     type: action
+    subtype: on_hold
+    trigger: device
+    id: on_hold
+  - domain: mqtt
+    device_id: !input hue_dimmer
+    type: action
+    subtype: on_hold_release
+    trigger: device
+    id: on_hold_release
+  - domain: mqtt
+    device_id: !input hue_dimmer
+    type: action
+    subtype: off_press
+    trigger: device
+    id: off_press
+  - domain: mqtt
+    device_id: !input hue_dimmer
+    type: action
     subtype: off_press_release
     trigger: device
     id: off_press_release
+  - domain: mqtt
+    device_id: !input hue_dimmer
+    type: action
+    subtype: off_hold
+    trigger: device
+    id: off_hold
+  - domain: mqtt
+    device_id: !input hue_dimmer
+    type: action
+    subtype: off_hold_release
+    trigger: device
+    id: off_hold_release
 conditions: []
 actions:
   - choose:
       - conditions:
-        - condition: trigger
-          id:
-            - on_press
+          - condition: trigger
+            id:
+              - on_press
         sequence:
           - choose:
               - conditions:
@@ -100,7 +152,7 @@ actions:
                   - action: light.turn_on
                     metadata: {}
                     data:
-                      brightness_pct: 100
+                      brightness_pct: !input on_light_level
                     target:
                       device_id: !input target_light
               - conditions:
