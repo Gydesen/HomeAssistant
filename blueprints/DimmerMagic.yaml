@@ -1,7 +1,7 @@
 blueprint:
   name: DimmerMagic
   description: Binding a Hue Dimmer to a Area
-  source_url: https://raw.githubusercontent.com/Gydesen/HomeAssistant/refs/heads/main/blueprints/DimmerMagic.yaml?token=GHSAT0AAAAAAC6FF7MBZSXQO7LE4LUNOPHSZ5Y75MA
+  source_url: https://raw.githubusercontent.com/Gydesen/HomeAssistant/3caa6db1dd6304bc85e626f7d0ce444575bd80c5/blueprints/DimmerMagic.yaml
   author: Gydesen
   domain: automation
   input:
