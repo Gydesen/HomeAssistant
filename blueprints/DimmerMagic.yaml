@@ -7,19 +7,18 @@ blueprint:
   input:
     hue_dimmer:
       name: Hue Dimmer
+      default: []
       selector:
         device:
           multiple: false
-    target_light:
-      name: Target light
-      selector:
-        device:
-          multiple: false
-    target_entity:
-      name: Target entity
+    light_entity:
+      name: Entity ID of the lightsource
+      default: []
       selector:
         entity:
-          multiple: false
+          multiple: true
+          domain:
+            - light
     on_light_level:
       name: On light level
       default: 80
@@ -70,10 +69,22 @@ blueprint:
           unit_of_measurement: "%"
           step: 1
           mode: slider
+    hue_button_toggle_device:
+      name: Hue button toggle device
+      default: []
+      selector:
+        device:
+          multiple: true
+    hue_button_action:
+      name: Hue Button Action
+      default: []
+      selector:
+        action:
 mode: restart
 variables:
   var_continuous_step: !input continuous_step
   var_step_step: !input step_step
+  var_hue_button_toggle_device: !input hue_button_toggle_device
 triggers:
   - domain: mqtt
     device_id: !input hue_dimmer
@@ -182,30 +193,26 @@ actions:
         sequence:
           - choose:
               - conditions:
-                  - condition: device
-                    type: is_off
-                    device_id: !input target_light
-                    entity_id: !input target_entity
-                    domain: light
+                  - condition: state
+                    entity_id: !input light_entity
+                    state: "off"
                 sequence:
                   - action: light.turn_on
                     metadata: {}
                     data:
                       brightness_pct: !input on_light_level
                     target:
-                      device_id: !input target_light
+                      entity_id: !input light_entity
               - conditions:
-                  - condition: device
-                    type: is_on
-                    device_id: !input target_light
-                    entity_id: !input target_entity
-                    domain: light
+                  - condition: state
+                    entity_id: !input light_entity
+                    state: "on"
                 sequence:
                   - action: light.turn_off
                     metadata: {}
                     data: {}
                     target:
-                      device_id: !input target_light
+                      entity_id: !input light_entity
       # Dim up, one step
       - conditions:
           - condition: trigger
@@ -217,7 +224,7 @@ actions:
             data:
               brightness_step_pct: !input step_step
             target:
-              device_id: !input target_light
+              entity_id: !input light_entity
       # Dim down, one step
       - conditions:
           - condition: trigger
@@ -229,7 +236,7 @@ actions:
             data:
               brightness_step_pct: "{{ var_step_step * -1}}"
             target:
-              device_id: !input target_light
+              entity_id: !input light_entity
       # Dim up, continious
       - conditions:
           - condition: trigger
@@ -244,7 +251,7 @@ actions:
                     brightness_step_pct: !input continuous_step
                     transition: !input transition_time
                   target:
-                    device_id: !input target_light
+                    entity_id: !input light_entity
                 - delay:
                     hours: 0
                     minutes: 0
@@ -268,7 +275,7 @@ actions:
                     brightness_step_pct: "{{ var_continuous_step * -1 }}"
                     transition: !input transition_time
                   target:
-                    device_id: !input target_light
+                    entity_id: !input light_entity
                 - delay:
                     hours: 0
                     minutes: 0
@@ -278,3 +285,23 @@ actions:
                 - condition: trigger
                   id:
                     - down_hold
+      # Hue button
+      - conditions:
+          - condition: trigger
+            id: off_press_release
+        sequence:
+          - action: homeassistant.toggle
+            metadata: {}
+            data: {}
+            target:
+              device_id: !input hue_button_toggle_device
+      # # Hue button
+      # - conditions:
+      #     - condition: trigger
+      #       id: off_press_release
+      #   sequence:
+      #     - action: switch.toggle
+      #       metadata: {}
+      #       data: {}
+      #       target:
+      #         device_id: !input hue_button_toggle_device
