@@ -1,0 +1,99 @@
+blueprint:
+  name: MotionMagic
+  description: Binding a Motion sensor to a light
+  source_url: https://raw.githubusercontent.com/Gydesen/HomeAssistant/main/blueprints/MotionMagic.yaml
+  author: Gydesen
+  domain: automation
+  input:
+    motion_sensor_entity:
+      name: Motion sensor entity
+      default: []
+      selector:
+        entity:
+          multiple: false
+          filter:
+            - domain: binary_sensor
+    light_entity:
+      name: Entity ID of the lightsource
+      default: []
+      selector:
+        entity:
+          multiple: true
+          filter:
+            domain: light
+    clear_before_off:
+      name: Clear before off
+      default:
+        hours: 0
+        minutes: 5
+        seconds: 0
+      selector:
+        duration:
+    suspend_sensor_duration:
+      name: Suspend sensor duration
+      default:
+        hours: 0
+        minutes: 0
+        seconds: 20
+      selector:
+        duration:
+    dimmer_action_entity:
+      name: Hue Dimmer action entity
+      default: []
+      selector:
+        entity:
+          multiple: false
+          filter:
+            domain: event
+mode: single
+triggers:
+  - trigger: state
+    entity_id: !input motion_sensor_entity
+    to: "on"
+    id: detected
+  - trigger: state
+    entity_id: !input motion_sensor_entity
+    to: "off"
+    for: !input clear_before_off
+    id: clear_all_duration
+actions:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id:
+              - detected
+        sequence:
+          - if:
+              - condition: and
+                conditions:
+                  - condition: sun
+                    before: sunrise
+                    after: sunset
+                  - condition: or
+                    conditions:
+                      - condition: state
+                        entity_id: !input dimmer_action_entity
+                        attribute: event_type
+                        state: press_release
+                        for: !input suspend_sensor_duration
+                      - condition: state
+                        entity_id: !input dimmer_action_entity
+                        attribute: event_type
+                        state: hold_release
+                        for: !input suspend_sensor_duration
+            then:
+              - action: light.turn_on
+                metadata: {}
+                data: {}
+                target:
+                  entity_id: !input light_entity
+      - conditions:
+          - condition: trigger
+            id:
+              - clear_all_duration
+        sequence:
+          - action: light.turn_off
+            metadata: {}
+            data: {}
+            target:
+              entity_id: !input light_entity
