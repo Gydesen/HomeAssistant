@@ -6,94 +6,109 @@ blueprint:
   author: Gydesen
   domain: automation
   input:
-    dimmer_action_entity:
-      name: Hue Dimmer action entity
-      default: []
-      selector:
-        entity:
-          multiple: false
-          filter:
-            - domain: event
-    light_entity:
-      name: Entity ID of the lightsource
-      default: []
-      selector:
-        entity:
-          multiple: true
-          filter:
-            - domain: light
-    on_light_level:
-      name: On light level
-      default: 80
-      selector:
-        number:
-          min: 10.0
-          max: 100.0
-          unit_of_measurement: percent
-          step: 1.0
-          mode: slider
-    delay_ms:
-      name: Delay In milliseconds
-      default: 300
-      selector:
-        number:
-          min: 10.0
-          max: 1000.0
-          unit_of_measurement: milliseconds
-          step: 10.0
-          mode: slider
-    transition_time:
-      name: Light transition time in continuous loop
-      default: 0.3
-      selector:
-        number:
-          min: 0.01
-          max: 1.0
-          unit_of_measurement: seconds
-          step: 0.01
-          mode: slider
-    continuous_step:
-      name: Percentage step in continuous loop
-      default: 10
-      selector:
-        number:
-          min: 1
-          max: 100
-          unit_of_measurement: "%"
-          step: 1
-          mode: slider
-    step_step:
-      name: Percentage step in single clicks
-      default: 5
-      selector:
-        number:
-          min: 1
-          max: 100
-          unit_of_measurement: "%"
-          step: 1
-          mode: slider
-    use_on:
-      name: Use Toggle
-      default: true
-      selector:
-        boolean:
-    use_up:
-      name: Use Up
-      default: true
-      selector:
-        boolean:
-    use_down:
-      name: Use Down
-      default: true
-      selector:
-        boolean:
-    use_off:
-      name: Use Off / Hue button
-      default: true
-      selector:
-        boolean:
+    base_input:
+      name: Base Inputs
+      icon: mdi:cog
+      input:
+        dimmer_action_entity:
+          name: Hue Dimmer action entity
+          default: []
+          selector:
+            entity:
+              multiple: false
+              filter:
+                - domain: event
+        light_entity:
+          name: Entity ID of the lightsource
+          default: []
+          selector:
+            entity:
+              multiple: false
+              filter:
+                - domain: light
+        on_light_level:
+          name: On light level
+          default: 80
+          selector:
+            number:
+              min: 10.0
+              max: 100.0
+              unit_of_measurement: percent
+              step: 1.0
+              mode: slider
+    dimming_input:
+      name: Dimming Inputs
+      icon: mdi:cog
+      collapsed: true
+      input:
+        delay_ms:
+          name: Delay In milliseconds
+          default: 300
+          selector:
+            number:
+              min: 10.0
+              max: 1000.0
+              unit_of_measurement: milliseconds
+              step: 10.0
+              mode: slider
+        transition_time:
+          name: Light transition time in continuous loop
+          default: 0.3
+          selector:
+            number:
+              min: 0.01
+              max: 1.0
+              unit_of_measurement: seconds
+              step: 0.01
+              mode: slider
+        continuous_step:
+          name: Percentage step in continuous loop
+          default: 10
+          selector:
+            number:
+              min: 1
+              max: 100
+              unit_of_measurement: "%"
+              step: 1
+              mode: slider
+        step_step:
+          name: Percentage step in single clicks
+          default: 5
+          selector:
+            number:
+              min: 1
+              max: 100
+              unit_of_measurement: "%"
+              step: 1
+              mode: slider
+    buttons_input:
+      name: Buttons Inputs
+      icon: mdi:cog
+      collapsed: true
+      input:
+        use_on:
+          name: Use Toggle
+          default: true
+          selector:
+            boolean:
+        use_up:
+          name: Use Up
+          default: true
+          selector:
+            boolean:
+        use_down:
+          name: Use Down
+          default: true
+          selector:
+            boolean:
+        use_off:
+          name: Use Off / Hue button
+          default: true
+          selector:
+            boolean:
 mode: restart
 variables:
+  var_light_entity: !input light_entity
   var_dimmer_event: !input dimmer_action_entity
   var_continuous_step: !input continuous_step
   var_step_step: !input step_step
@@ -238,12 +253,22 @@ actions:
                   - condition: template
                     value_template: "{{ var_use_down }}"
                 sequence:
-                  - action: light.turn_on
-                    metadata: {}
-                    data:
-                      brightness_step_pct: "{{ var_step_step * -1}}"
-                    target:
-                      entity_id: !input light_entity
+                  - if:
+                    - condition: template
+                      value_template: >
+                        {{ state_attr(var_light_entity, "brightness") > 13 }}
+                    then:
+                    - action: light.turn_on
+                      metadata: {}
+                      data:
+                        brightness_step_pct: "{{ var_step_step * -1}}"
+                      target:
+                        entity_id: !input light_entity
+                    else:
+                    - action: light.turn_on
+                      metadata: {}
+                      data:
+                        brightness: 1
 
               - conditions:
                   - alias: Press released Off AND var_use_off is on
@@ -323,9 +348,11 @@ actions:
                             seconds: 0
                             milliseconds: !input delay_ms
                       while:
-                        - condition: trigger
-                          id:
-                            - hold
+                      - condition: trigger
+                        id: hold
+                      - condition: template
+                        value_template: >
+                          {{ state_attr(var_light_entity, "brightness") > 26 }}
 
               - conditions:
                   - alias: Hold Off AND use_off is on
