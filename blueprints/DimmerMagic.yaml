@@ -1,24 +1,27 @@
 blueprint:
   name: DimmerMagic
-  description: Binding a Hue Dimmer to a Area
+  description: >
+    Binding a Hue Dimmer to a Area
   source_url: https://raw.githubusercontent.com/Gydesen/HomeAssistant/main/blueprints/DimmerMagic.yaml
   author: Gydesen
   domain: automation
   input:
-    hue_dimmer:
-      name: Hue Dimmer
+    dimmer_action_entity:
+      name: Hue Dimmer action entity
       default: []
       selector:
-        device:
+        entity:
           multiple: false
+          filter:
+            - domain: event
     light_entity:
       name: Entity ID of the lightsource
       default: []
       selector:
         entity:
           multiple: true
-          domain:
-            - light
+          filter:
+            - domain: light
     on_light_level:
       name: On light level
       default: 80
@@ -69,239 +72,314 @@ blueprint:
           unit_of_measurement: "%"
           step: 1
           mode: slider
-    hue_button_toggle_device:
-      name: Hue button toggle device
-      default: []
+    use_on:
+      name: Use Toggle
+      default: true
       selector:
-        device:
-          multiple: true
-    hue_button_action:
-      name: Hue Button Action
-      default: []
+        boolean:
+    use_up:
+      name: Use Up
+      default: true
       selector:
-        action:
+        boolean:
+    use_down:
+      name: Use Down
+      default: true
+      selector:
+        boolean:
+    use_off:
+      name: Use Off / Hue button
+      default: true
+      selector:
+        boolean:
 mode: restart
 variables:
+  var_dimmer_event: !input dimmer_action_entity
   var_continuous_step: !input continuous_step
   var_step_step: !input step_step
-  var_hue_button_toggle_device: !input hue_button_toggle_device
+  var_use_on: !input use_on
+  var_use_up: !input use_up
+  var_use_down: !input use_down
+  var_use_off: !input use_off
+
 triggers:
-  - domain: mqtt
-    device_id: !input hue_dimmer
-    type: action
-    subtype: up_press
-    trigger: device
-    id: up_press
-  - domain: mqtt
-    device_id: !input hue_dimmer
-    type: action
-    subtype: up_press_release
-    trigger: device
-    id: up_press_release
-  - domain: mqtt
-    device_id: !input hue_dimmer
-    type: action
-    subtype: up_hold
-    trigger: device
-    id: up_hold
-  - domain: mqtt
-    device_id: !input hue_dimmer
-    type: action
-    subtype: up_hold_release
-    trigger: device
-    id: up_hold_release
-  - domain: mqtt
-    device_id: !input hue_dimmer
-    type: action
-    subtype: down_press
-    trigger: device
-    id: down_press
-  - domain: mqtt
-    device_id: !input hue_dimmer
-    type: action
-    subtype: down_press_release
-    trigger: device
-    id: down_press_release
-  - domain: mqtt
-    device_id: !input hue_dimmer
-    type: action
-    subtype: down_hold
-    trigger: device
-    id: down_hold
-  - domain: mqtt
-    device_id: !input hue_dimmer
-    type: action
-    subtype: down_hold_release
-    trigger: device
-    id: down_hold_release
-  - domain: mqtt
-    device_id: !input hue_dimmer
-    type: action
-    subtype: on_press
-    trigger: device
-    id: on_press
-  - domain: mqtt
-    device_id: !input hue_dimmer
-    type: action
-    subtype: on_press_release
-    trigger: device
-    id: on_press_release
-  - domain: mqtt
-    device_id: !input hue_dimmer
-    type: action
-    subtype: on_hold
-    trigger: device
-    id: on_hold
-  - domain: mqtt
-    device_id: !input hue_dimmer
-    type: action
-    subtype: on_hold_release
-    trigger: device
-    id: on_hold_release
-  - domain: mqtt
-    device_id: !input hue_dimmer
-    type: action
-    subtype: off_press
-    trigger: device
-    id: off_press
-  - domain: mqtt
-    device_id: !input hue_dimmer
-    type: action
-    subtype: off_press_release
-    trigger: device
-    id: off_press_release
-  - domain: mqtt
-    device_id: !input hue_dimmer
-    type: action
-    subtype: off_hold
-    trigger: device
-    id: off_hold
-  - domain: mqtt
-    device_id: !input hue_dimmer
-    type: action
-    subtype: off_hold_release
-    trigger: device
-    id: off_hold_release
-conditions: []
+  - trigger: state
+    entity_id:
+      - !input dimmer_action_entity
+    attribute: event_type
+    to: press
+    id: press
+  - trigger: state
+    entity_id:
+      - !input dimmer_action_entity
+    attribute: event_type
+    to: press_release
+    id: press_release
+  - trigger: state
+    entity_id:
+      - !input dimmer_action_entity
+    attribute: event_type
+    to: hold
+    id: hold
+  - trigger: state
+    entity_id:
+      - !input dimmer_action_entity
+    attribute: event_type
+    to: hold_release
+    id: hold_release
 actions:
   - choose:
-      # Toggle light on / off
       - conditions:
           - condition: trigger
             id:
-              - on_press
+              - press
         sequence:
           - choose:
               - conditions:
-                  - condition: state
-                    entity_id: !input light_entity
+                  - alias: "Press on AND var_use_on is selected"
+                    condition: state
+                    entity_id: !input dimmer_action_entity
+                    attribute: button
+                    state: "on"
+                  - condition: template
+                    value_template: "{{ var_use_on }}"
+                sequence: []
+
+              - conditions:
+                  - alias: "Press up AND use_up is selected"
+                    condition: state
+                    entity_id: !input dimmer_action_entity
+                    attribute: button
+                    state: up
+                  - condition: template
+                    value_template: "{{ var_use_up }}"
+                sequence: []
+
+              - conditions:
+                  - alias: "Press down AND use_down is selected"
+                    condition: state
+                    entity_id: !input dimmer_action_entity
+                    attribute: button
+                    state: down
+                  - condition: template
+                    value_template: "{{ var_use_down }}"
+                sequence: []
+
+              - conditions:
+                  - alias: "Press off AND use_off is selected"
+                    condition: state
+                    entity_id: !input dimmer_action_entity
+                    attribute: button
                     state: "off"
+                  - condition: template
+                    value_template: "{{ var_use_off }}"
+                sequence: []
+
+      - conditions:
+          - condition: trigger
+            id:
+              - press_release
+        sequence:
+          - choose:
+              - conditions:
+                  - alias: "Press release on AND use_on is selected"
+                    condition: state
+                    entity_id: !input dimmer_action_entity
+                    attribute: button
+                    state: "on"
+                  - condition: template
+                    value_template: "{{ var_use_on }}"
+                sequence:
+                  - choose:
+                      - conditions:
+                          - condition: state
+                            entity_id: !input light_entity
+                            state: "off"
+                        sequence:
+                          - action: light.turn_on
+                            metadata: {}
+                            #data:
+                            #  brightness_pct: !input on_light_level
+                            target:
+                              entity_id: !input light_entity
+                      - conditions:
+                          - condition: state
+                            entity_id: !input light_entity
+                            state: "on"
+                        sequence:
+                          - action: light.turn_off
+                            metadata: {}
+                            data: {}
+                            target:
+                              entity_id: !input light_entity
+
+              - conditions:
+                  - alias: Press released Up AND var_use_up is on
+                    condition: state
+                    entity_id: !input dimmer_action_entity
+                    attribute: button
+                    state: "up"
+                  - condition: template
+                    value_template: "{{ var_use_up }}"
                 sequence:
                   - action: light.turn_on
                     metadata: {}
                     data:
-                      brightness_pct: !input on_light_level
+                      brightness_step_pct: !input step_step
                     target:
                       entity_id: !input light_entity
+
               - conditions:
-                  - condition: state
-                    entity_id: !input light_entity
-                    state: "on"
+                  - alias: Press released Down AND var_use_down is on
+                    condition: state
+                    entity_id: !input dimmer_action_entity
+                    attribute: button
+                    state: "down"
+                  - condition: template
+                    value_template: "{{ var_use_down }}"
                 sequence:
-                  - action: light.turn_off
+                  - action: light.turn_on
                     metadata: {}
-                    data: {}
+                    data:
+                      brightness_step_pct: "{{ var_step_step * -1}}"
                     target:
                       entity_id: !input light_entity
-      # Dim up, one step
+
+              - conditions:
+                  - alias: Press released Off AND var_use_off is on
+                    condition: state
+                    entity_id: !input dimmer_action_entity
+                    attribute: button
+                    state: "off"
+                  - condition: template
+                    value_template: "{{ var_use_off }}"
+                sequence: []
+
       - conditions:
           - condition: trigger
             id:
-              - up_press_release
+              - hold
         sequence:
-          - action: light.turn_on
-            metadata: {}
-            data:
-              brightness_step_pct: !input step_step
-            target:
-              entity_id: !input light_entity
-      # Dim down, one step
+          - choose:
+              - conditions:
+                  - alias: Hold On AND use_on is on
+                    condition: state
+                    entity_id: !input dimmer_action_entity
+                    attribute: button
+                    state: "on"
+                  - condition: template
+                    value_template: "{{ var_use_on }}"
+                sequence: []
+
+              - conditions:
+                  - alias: Hold Up AND use_up is on
+                    condition: state
+                    entity_id: !input dimmer_action_entity
+                    attribute: button
+                    state: "up"
+                  - condition: template
+                    value_template: "{{ var_use_up }}"
+                sequence:
+                  - repeat:
+                      sequence:
+                        - action: light.turn_on
+                          metadata: {}
+                          data:
+                            brightness_step_pct: !input continuous_step
+                            transition: !input transition_time
+                          target:
+                            entity_id: !input light_entity
+                        - delay:
+                            hours: 0
+                            minutes: 0
+                            seconds: 0
+                            milliseconds: !input delay_ms
+                      while:
+                        - condition: trigger
+                          id:
+                            - hold
+
+              - conditions:
+                  - alias: Hold Down AND use_down is on
+                    condition: state
+                    entity_id: !input dimmer_action_entity
+                    attribute: button
+                    state: "down"
+                  - condition: template
+                    value_template: "{{ var_use_down }}"
+                sequence:
+                  - repeat:
+                      sequence:
+                        - action: light.turn_on
+                          metadata: {}
+                          data:
+                            brightness_step_pct: "{{ var_continuous_step * -1 }}"
+                            transition: !input transition_time
+                          target:
+                            entity_id: !input light_entity
+                        - delay:
+                            hours: 0
+                            minutes: 0
+                            seconds: 0
+                            milliseconds: !input delay_ms
+                      while:
+                        - condition: trigger
+                          id:
+                            - hold
+
+              - conditions:
+                  - alias: Hold Off AND use_off is on
+                    condition: state
+                    entity_id: !input dimmer_action_entity
+                    attribute: button
+                    state: "off"
+                  - condition: template
+                    value_template: "{{ var_use_off }}"
+                sequence: []
+
       - conditions:
           - condition: trigger
             id:
-              - down_press_release
+              - hold_release
         sequence:
-          - action: light.turn_on
-            metadata: {}
-            data:
-              brightness_step_pct: "{{ var_step_step * -1}}"
-            target:
-              entity_id: !input light_entity
-      # Dim up, continious
-      - conditions:
-          - condition: trigger
-            id:
-              - up_hold
-        sequence:
-          - repeat:
-              sequence:
-                - action: light.turn_on
-                  metadata: {}
-                  data:
-                    brightness_step_pct: !input continuous_step
-                    transition: !input transition_time
-                  target:
-                    entity_id: !input light_entity
-                - delay:
-                    hours: 0
-                    minutes: 0
-                    seconds: 0
-                    milliseconds: !input delay_ms
-              while:
-                - condition: trigger
-                  id:
-                    - up_hold
-      # Dim down, continious
-      - conditions:
-          - condition: trigger
-            id:
-              - down_hold
-        sequence:
-          - repeat:
-              sequence:
-                - action: light.turn_on
-                  metadata: {}
-                  data:
-                    brightness_step_pct: "{{ var_continuous_step * -1 }}"
-                    transition: !input transition_time
-                  target:
-                    entity_id: !input light_entity
-                - delay:
-                    hours: 0
-                    minutes: 0
-                    seconds: 0
-                    milliseconds: !input delay_ms
-              while:
-                - condition: trigger
-                  id:
-                    - down_hold
-      # Hue button
-      - conditions:
-          - condition: trigger
-            id: off_press_release
-        sequence:
-          - action: homeassistant.toggle
-            metadata: {}
-            data: {}
-            target:
-              device_id: !input hue_button_toggle_device
-      # # Hue button
-      # - conditions:
-      #     - condition: trigger
-      #       id: off_press_release
-      #   sequence:
-      #     - action: switch.toggle
-      #       metadata: {}
-      #       data: {}
-      #       target:
-      #         device_id: !input hue_button_toggle_device
+          - choose:
+              - conditions:
+                  - alias: Hold Release On AND use_on is on
+                    condition: state
+                    entity_id: !input dimmer_action_entity
+                    attribute: button
+                    state: "on"
+                  - condition: template
+                    value_template: "{{ var_use_on }}"
+                sequence: []
+
+              - conditions:
+                  - alias: Hold Release Up AND use_up is on
+                    condition: state
+                    entity_id: !input dimmer_action_entity
+                    attribute: button
+                    state: "up"
+                  - condition: template
+                    value_template: "{{ var_use_up }}"
+                sequence: []
+
+              - conditions:
+                  - alias: Hold Release Down and use_down is on
+                    condition: state
+                    entity_id: !input dimmer_action_entity
+                    attribute: button
+                    state: "down"
+                  - condition: template
+                    value_template: "{{ var_use_down }}"
+                sequence: []
+
+              - conditions:
+                  - alias: Hold Release Off and use_off is on
+                    condition: state
+                    entity_id: !input dimmer_action_entity
+                    attribute: button
+                    state: "off"
+                  - condition: template
+                    value_template: "{{ var_use_off }}"
+                sequence: []
+
