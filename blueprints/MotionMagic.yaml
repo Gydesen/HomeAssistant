@@ -7,22 +7,26 @@ blueprint:
   input:
     motion_sensor_entity:
       name: Motion sensor entity
+      description: >
+        Motion sensors that can turn on the light.
       default: []
       selector:
         entity:
-          multiple: false
+          multiple: true
           filter:
             - domain: binary_sensor
     light_entity:
-      name: Entity ID of the lightsource
+      name: Light entity
       default: []
       selector:
         entity:
           multiple: true
           filter:
             domain: light
-    clear_before_off:
-      name: Clear before off
+    occupied_clear_time:
+      name: Occupied clear time
+      description: >
+        The time from when motion sensor sends clear signal untill turn off action runs
       default:
         hours: 0
         minutes: 5
@@ -45,6 +49,14 @@ blueprint:
           multiple: false
           filter:
             domain: event
+    suspender:
+      name: Suspender
+      default: []
+      selector:
+        entity:
+          multiple: false
+          filter:
+            domain: input_boolean
 mode: single
 triggers:
   - trigger: state
@@ -54,46 +66,49 @@ triggers:
   - trigger: state
     entity_id: !input motion_sensor_entity
     to: "off"
-    for: !input clear_before_off
+    for: !input occupied_clear_time
     id: clear_all_duration
 actions:
-  - choose:
-      - conditions:
-          - condition: trigger
-            id:
-              - detected
-        sequence:
-          - if:
-              - condition: and
+  - if:
+      - alias: "check if sensor is disabled"
+        condition: state
+        entity_id: !input suspender
+        state: "off"
+    then:
+      - choose:
+          - conditions:
+              - condition: trigger
+                id:
+                  - detected
+            sequence:
+              - condition: sun
+                before: sunrise
+                after: sunset
+
+              - condition: or
                 conditions:
-                  - condition: sun
-                    before: sunrise
-                    after: sunset
-                  - condition: or
-                    conditions:
-                      - condition: state
-                        entity_id: !input dimmer_action_entity
-                        attribute: event_type
-                        state: press_release
-                        for: !input suspend_sensor_duration
-                      - condition: state
-                        entity_id: !input dimmer_action_entity
-                        attribute: event_type
-                        state: hold_release
-                        for: !input suspend_sensor_duration
-            then:
+                  - condition: state
+                    entity_id: !input dimmer_action_entity
+                    attribute: event_type
+                    state: press_release
+                    for: !input suspend_sensor_duration
+                  - condition: state
+                    entity_id: !input dimmer_action_entity
+                    attribute: event_type
+                    state: hold_release
+                    for: !input suspend_sensor_duration
               - action: light.turn_on
                 metadata: {}
                 data: {}
                 target:
                   entity_id: !input light_entity
-      - conditions:
-          - condition: trigger
-            id:
-              - clear_all_duration
-        sequence:
-          - action: light.turn_off
-            metadata: {}
-            data: {}
-            target:
-              entity_id: !input light_entity
+          - conditions:
+              - condition: trigger
+                id:
+                  - clear_all_duration
+            sequence:
+              - action: light.turn_off
+                metadata: {}
+                data: {}
+                target:
+                  entity_id: !input light_entity
