@@ -26,16 +26,30 @@ blueprint:
               multiple: false
               filter:
                 - domain: light
-        on_light_level:
-          name: On light level
-          default: 80
+    bonus_input:
+      name: Bonus Imput
+      icon: mdi:cog
+      input:
+        bonus_short_action:
+          name: Bonus short Action
+          default: []
           selector:
-            number:
-              min: 10.0
-              max: 100.0
-              unit_of_measurement: percent
-              step: 1.0
-              mode: slider
+            action: {}
+        bonus_hold_action:
+          name: Bonus hold Action
+          default: []
+          selector:
+            action: {}
+        # on_light_level:
+        #   name: On light level
+        #   default: 80
+        #   selector:
+        #     number:
+        #       min: 10.0
+        #       max: 100.0
+        #       unit_of_measurement: percent
+        #       step: 1.0
+        #       mode: slider
     dimming_input:
       name: Dimming Inputs
       icon: mdi:cog
@@ -254,33 +268,36 @@ actions:
                     value_template: "{{ var_use_down }}"
                 sequence:
                   - if:
-                    - condition: template
-                      value_template: >
-                        {{ state_attr(var_light_entity, "brightness") > 13 }}
+                      - condition: template
+                        value_template: >
+                          {{ state_attr(var_light_entity, "brightness") > 13 }}
                     then:
-                    - action: light.turn_on
-                      metadata: {}
-                      data:
-                        brightness_step_pct: "{{ var_step_step * -1}}"
-                      target:
-                        entity_id: !input light_entity
+                      - action: light.turn_on
+                        metadata: {}
+                        data:
+                          brightness_step_pct: "{{ var_step_step * -1}}"
+                        target:
+                          entity_id: !input light_entity
                     else:
-                    - action: light.turn_on
-                      metadata: {}
-                      data:
-                        brightness: 1
-                      target:
-                        entity_id: !input light_entity
+                      - action: light.turn_on
+                        metadata: {}
+                        data:
+                          brightness: 1
+                        target:
+                          entity_id: !input light_entity
 
               - conditions:
-                  - alias: Press released Off AND var_use_off is on
+                  - alias: Press released Off AND use_off is on
                     condition: state
                     entity_id: !input dimmer_action_entity
                     attribute: button
                     state: "off"
                   - condition: template
                     value_template: "{{ var_use_off }}"
-                sequence: []
+                sequence:
+                  - alias: bonus_short_action
+                    choose: []
+                    default: !input bonus_short_action
 
       - conditions:
           - condition: trigger
@@ -296,7 +313,13 @@ actions:
                     state: "on"
                   - condition: template
                     value_template: "{{ var_use_on }}"
-                sequence: []
+                sequence:
+                  action: light.turn_on
+                  metadata: {}
+                  data:
+                    brightness_pct: 100
+                  target:
+                    entity_id: !input light_entity
 
               - conditions:
                   - alias: Hold Up AND use_up is on
@@ -350,11 +373,11 @@ actions:
                             seconds: 0
                             milliseconds: !input delay_ms
                       while:
-                      - condition: trigger
-                        id: hold
-                      - condition: template
-                        value_template: >
-                          {{ state_attr(var_light_entity, "brightness") > 26 }}
+                        - condition: trigger
+                          id: hold
+                        - condition: template
+                          value_template: >
+                            {{ state_attr(var_light_entity, "brightness") > 26 }}
 
               - conditions:
                   - alias: Hold Off AND use_off is on
@@ -410,5 +433,7 @@ actions:
                     state: "off"
                   - condition: template
                     value_template: "{{ var_use_off }}"
-                sequence: []
-
+                sequence:
+                  - alias: bonus_hold_action
+                    choose: []
+                    default: !input bonus_hold_action
