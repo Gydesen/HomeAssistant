@@ -1,8 +1,8 @@
 blueprint:
   name: DimZha
-  description: "Binding a Hue Dimmer to a Area
+  description: 'Binding a Hue Dimmer to a Area
 
-    "
+    '
   source_url: https://raw.githubusercontent.com/Gydesen/HomeAssistant/refs/heads/main/blueprints/DimZha.yaml
   author: Gydesen
   domain: automation
@@ -19,10 +19,10 @@ blueprint:
               integration: zha
               manufacturer: Philips
               entity:
-                - domain:
-                    - sensor
-                  device_class:
-                    - battery
+              - domain:
+                - sensor
+                device_class:
+                - battery
               multiple: false
         light_entity:
           name: Entity ID of the lightsource
@@ -31,8 +31,8 @@ blueprint:
             entity:
               multiple: true
               filter:
-                - domain:
-                    - light
+              - domain:
+                - light
               reorder: false
     bonus_input:
       name: Bonus Input
@@ -80,7 +80,7 @@ blueprint:
             number:
               min: 1.0
               max: 100.0
-              unit_of_measurement: "%"
+              unit_of_measurement: '%'
               step: 1.0
               mode: slider
         step_step:
@@ -90,67 +90,69 @@ blueprint:
             number:
               min: 1.0
               max: 100.0
-              unit_of_measurement: "%"
+              unit_of_measurement: '%'
               step: 1.0
               mode: slider
 mode: restart
+variables:
+  var_light_entity: !input light_entity
+  var_step_step: !input step_step
 trigger:
-  - platform: event
-    event_type: zha_event
-    event_data:
-      device_id: !input remote
-      cluster_id: 64512
+- platform: event
+  event_type: zha_event
+  event_data:
+    device_id: !input remote
+    cluster_id: 64512
 action:
-  - variables:
-      command: "{{ trigger.event.data.command }}"
-  - choose:
-      - conditions: "{{ command == 'on_short_release' }}"
-        sequence:
-          - action: light.toggle
-            target:
-              entity_id: !input light_entity
-      - conditions: "{{ command == 'on_hold' }}"
-        sequence:
-          - action: light.turn_on
-            metadata: {}
-            data:
-              brightness_pct: 100
-            target:
-              entity_id: !input light_entity
-      - conditions: "{{ command == 'up_short_release' }}"
-        sequence:
-          - alias: HUE_short_action
-            choose: []
-            default: !input HUE_short_action
-      - conditions: "{{ command == 'down_short_release' }}"
-        sequence:
-          - if:
-              - condition: template
-                value_template:
-                  '{{ state_attr(!input light_entity, "brightness") > 13 }}
+- variables:
+    command: '{{ trigger.event.data.command }}'
+- choose:
+  - conditions: '{{ command == ''on_short_release'' }}'
+    sequence:
+    - action: light.toggle
+      target:
+        entity_id: !input light_entity
+  - conditions: '{{ command == ''on_hold'' }}'
+    sequence:
+    - action: light.turn_on
+      metadata: {}
+      data:
+        brightness_pct: 100
+      target:
+        entity_id: !input light_entity
+  - conditions: '{{ command == ''up_short_release'' }}'
+    sequence:
+    - alias: HUE_short_action
+      choose: []
+      default: !input HUE_short_action
+  - conditions: '{{ command == ''down_short_release'' }}'
+    sequence:
+    - if:
+      - condition: template
+        value_template: '{{ state_attr(var_light_entity, "brightness") > 13 }}
 
-                  '
-            then:
-              - action: light.turn_on
-                metadata: {}
-                data:
-                  brightness_step_pct: "{{ var_step_step * -1}}"
-                target:
-                  entity_id: !input light_entity
-            else:
-              - action: light.turn_on
-                metadata: {}
-                data:
-                  brightness: 1
-                target:
-                  entity_id: !input light_entity
-      - conditions: "{{ command == 'off_short_release' }}"
-        sequence:
-          - alias: HUE_short_action
-            choose: []
-            default: !input HUE_short_action
-      - conditions: "{{ command == 'off_hold' }}"
-        sequence:
-          - alias: HUE_hold_action
-            choose: []
-            default: !input HUE_hold_action
+          '
+      then:
+      - action: light.turn_on
+        metadata: {}
+        data:
+          brightness_step_pct: '{{ var_step_step * -1}}'
+        target:
+          entity_id: !input light_entity
+      else:
+      - action: light.turn_on
+        metadata: {}
+        data:
+          brightness: 1
+        target:
+          entity_id: !input light_entity
+  - conditions: '{{ command == ''off_short_release'' }}'
+    sequence:
+    - alias: HUE_short_action
+      choose: []
+      default: !input HUE_short_action
+  - conditions: '{{ command == ''off_hold'' }}'
+    sequence:
+    - alias: HUE_hold_action
+      choose: []
+      default: !input HUE_hold_action
