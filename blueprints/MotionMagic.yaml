@@ -97,6 +97,11 @@ actions:
                     attribute: event_type
                     state: hold_release
                     for: !input suspend_sensor_duration
+              - condition: not
+                conditions:
+                  - condition: state
+                    entity_id: !input light_entity
+                    state: "on"
               - action: light.turn_on
                 metadata: {}
                 data: {}
