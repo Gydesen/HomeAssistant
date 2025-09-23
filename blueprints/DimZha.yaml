@@ -3,7 +3,7 @@ blueprint:
   description: "Binding a Hue Dimmer to a Area
 
     "
-  source_url: https://raw.githubusercontent.com/Gydesen/HomeAssistant/refs/heads/main/blueprints/DimmerMagic.yaml
+  source_url: https://raw.githubusercontent.com/Gydesen/HomeAssistant/refs/heads/main/blueprints/DimZha.yaml
   author: Gydesen
   domain: automation
   input:
@@ -33,6 +33,7 @@ blueprint:
               filter:
                 - domain:
                     - light
+              reorder: false
     bonus_input:
       name: Bonus Input
       icon: mdi:cog
@@ -126,7 +127,7 @@ action:
           - if:
               - condition: template
                 value_template:
-                  '{{ state_attr(var_light_entity, "brightness") > 13 }}
+                  '{{ state_attr(!input light_entity, "brightness") > 13 }}
 
                   '
             then:
