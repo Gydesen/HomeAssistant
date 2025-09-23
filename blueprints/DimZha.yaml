@@ -122,30 +122,20 @@ action:
         entity_id: !input light_entity
   - conditions: '{{ command == ''up_short_release'' }}'
     sequence:
-    - alias: HUE_short_action
-      choose: []
-      default: !input HUE_short_action
+    - action: light.turn_on
+      metadata: {}
+      data:
+        brightness_step_pct: 30
+      target:
+        entity_id: !input light_entity
   - conditions: '{{ command == ''down_short_release'' }}'
     sequence:
-    - if:
-      - condition: template
-        value_template: '{{ state_attr(var_light_entity, "brightness") > 13 }}
-
-          '
-      then:
-      - action: light.turn_on
-        metadata: {}
-        data:
-          brightness_step_pct: '{{ var_step_step * -1}}'
-        target:
-          entity_id: !input light_entity
-      else:
-      - action: light.turn_on
-        metadata: {}
-        data:
-          brightness: 1
-        target:
-          entity_id: !input light_entity
+    - action: light.turn_on
+      metadata: {}
+      data:
+        brightness_step_pct: -30
+      target:
+        entity_id: !input light_entity
   - conditions: '{{ command == ''off_short_release'' }}'
     sequence:
     - alias: HUE_short_action
