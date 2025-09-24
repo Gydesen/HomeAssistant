@@ -41,10 +41,10 @@ blueprint:
       selector:
         select:
           options:
-          - label: Yes
-            value: yes
-          - label: No
-            value: no
+          - label: "Yes"
+            value: "yes"
+          - label: "No"
+            value: "no"
           custom_value: false
           multiple: false
     suspend_inputs:
