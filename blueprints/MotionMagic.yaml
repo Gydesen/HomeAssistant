@@ -41,10 +41,10 @@ blueprint:
       selector:
         select:
           options:
-          - label: "Yes"
-            value: "yes"
-          - label: "No"
-            value: "no"
+            - label: "Yes"
+              value: "yes"
+            - label: "No"
+              value: "no"
           custom_value: false
           multiple: false
     suspend_inputs:
@@ -67,6 +67,8 @@ blueprint:
               multiple: false
               filter:
                 domain: event
+variables:
+  var_follow_sun: !input follow_sun
 mode: single
 triggers:
   - trigger: state
@@ -79,51 +81,48 @@ triggers:
     for: !input occupied_clear_time
     id: clear_all_duration
 actions:
-  - if:
-      - alias: "check if sensor is disabled"
-        condition: state
-        entity_id: !input suspender
-        state: "off"
-    then:
-      - choose:
-          - conditions:
-              - condition: trigger
-                id:
-                  - detected
-            sequence:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id:
+              - detected
+        sequence:
+          - condition: or
+            conditions:
               - condition: sun
                 before: sunrise
                 after: sunset
-
-              - condition: or
-                conditions:
-                  - condition: state
-                    entity_id: !input dimmer_action_entity
-                    attribute: event_type
-                    state: press_release
-                    for: !input suspend_sensor_duration
-                  - condition: state
-                    entity_id: !input dimmer_action_entity
-                    attribute: event_type
-                    state: hold_release
-                    for: !input suspend_sensor_duration
-              - condition: not
-                conditions:
-                  - condition: state
-                    entity_id: !input light_entity
-                    state: "on"
-              - action: light.turn_on
-                metadata: {}
-                data: {}
-                target:
-                  entity_id: !input light_entity
-          - conditions:
-              - condition: trigger
-                id:
-                  - clear_all_duration
-            sequence:
-              - action: light.turn_off
-                metadata: {}
-                data: {}
-                target:
-                  entity_id: !input light_entity
+              - condition: template
+                value_template: "{{ var_follow_sun == 'no' }}"
+          - condition: or
+            conditions:
+              - condition: state
+                entity_id: !input dimmer_action_entity
+                attribute: event_type
+                state: press_release
+                for: !input suspend_sensor_duration
+              - condition: state
+                entity_id: !input dimmer_action_entity
+                attribute: event_type
+                state: hold_release
+                for: !input suspend_sensor_duration
+          - condition: not
+            conditions:
+              - condition: state
+                entity_id: !input light_entity
+                state: "on"
+          - action: light.turn_on
+            metadata: {}
+            data: {}
+            target:
+              entity_id: !input light_entity
+      - conditions:
+          - condition: trigger
+            id:
+              - clear_all_duration
+        sequence:
+          - action: light.turn_off
+            metadata: {}
+            data: {}
+            target:
+              entity_id: !input light_entity
