@@ -33,22 +33,26 @@ blueprint:
         seconds: 0
       selector:
         duration:
-    suspend_sensor_duration:
-      name: Suspend sensor duration
-      default:
-        hours: 0
-        minutes: 0
-        seconds: 20
-      selector:
-        duration:
-    dimmer_action_entity:
-      name: Hue Dimmer action entity
-      default: []
-      selector:
-        entity:
-          multiple: false
-          filter:
-            domain: event
+    suspend_inputs:
+      name: Suspend on Dimmer usage
+      icon: mdi:remote
+      input:
+        suspend_sensor_duration:
+          name: Suspend sensor duration
+          default:
+            hours: 0
+            minutes: 0
+            seconds: 20
+          selector:
+            duration:
+        dimmer_action_entity:
+          name: Hue Dimmer action entity
+          default: []
+          selector:
+            entity:
+              multiple: false
+              filter:
+                domain: event
     suspender:
       name: Suspender
       default: []
