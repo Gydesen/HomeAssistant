@@ -33,6 +33,20 @@ blueprint:
         seconds: 0
       selector:
         duration:
+    follow_sun:
+      name: Follow the sun
+      description: >
+        Only turn on light after sunset, before sun rise
+      default: yes
+      selector:
+        select:
+          options:
+          - label: Yes
+            value: yes
+          - label: No
+            value: no
+          custom_value: false
+          multiple: false
     suspend_inputs:
       name: Suspend on Dimmer usage
       icon: mdi:remote
@@ -53,14 +67,6 @@ blueprint:
               multiple: false
               filter:
                 domain: event
-    suspender:
-      name: Suspender
-      default: []
-      selector:
-        entity:
-          multiple: false
-          filter:
-            domain: input_boolean
 mode: single
 triggers:
   - trigger: state
